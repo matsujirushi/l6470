@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # モジュールインポート
-import spidev
+import pigpio
 
 # L6470パラメータリスト
 class Param(object):
@@ -98,9 +98,8 @@ class Device:
         self.devInfo['client'] =client
 
         # SPIデバイスの初期化
-        self.spi = spidev.SpiDev(bus, client)
-        self.spi.max_speed_hz = 5000
-        self.spi.mode = 0b11
+        self.spi = pigpio.pi()
+        self.spi_h = self.spi.spi_open(bus, 32000, 3)
         
         self.param = {
             'ABS_POS'
@@ -139,7 +138,7 @@ class Device:
         """
 
         if(self.spi is not None):
-            self.spi.close()
+            self.spi.stop()
 
         print('SPI.{}.{}を閉じます'.format(self.devInfo['bus'], self.devInfo['client']))
 
@@ -574,7 +573,8 @@ class Device:
         from_recv = []        
 
         for value in to_send:
-            from_recv += self.spi.xfer([value])
+            (count, recv) = self.spi.spi_xfer(self.spi_h, [value])
+            from_recv += [int(recv[0])]
 
         return from_recv[1:]
 
